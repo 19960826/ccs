@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zs.pms.dao.UserDao">
+<!-- id自己命名 -->
+<resultMap type="UserPo" id="user">
+<!-- 
+    一对一关联
+    property:关联字段的属性名字
+    columm:关联的字段名
+    select:关联执行的sql名称
+    执行完sql返回的对象赋值给属性dept属性
+ -->
+<id property="id" column="id"/>  
+<association property="dept" column="dept" select="getUser" />
+<collection property="per"  column="id" select="gettpermiss" ofType="TPermission"/>
+</resultMap>
+
+<resultMap type="UserPo" id="user2">
+
+<association property="dept" column="dept" select="getUser" />
+</resultMap>
+
+<select id="getUser" parameterType="int" resultType="TDept">
+   select * from tdept where id=#{dept}
+</select>
+
+
+<select id="gettpermiss" parameterType="int" resultType="TPermission">
+  select * from tpermission where id in
+    (select pid from trolepermission where rid in
+       (select rid from tuserrole where usid=#{id}))
+</select>
+
+
+
+<!-- resultType:查询分页 -->
+<select id="queryByPage" parameterType="QueryUser" resultMap="user2">
+  select * from
+(select rownum rn,t.* from(
+    <include refid="selector"/>
+    <include refid="where"/>
+    <include refid="order"/>
+    )t )t1
+    <include refid="page"/>
+</select>
+
+<!-- resultType:条件查询 -->
+<select id="queryByCon" parameterType="QueryUser" resultType="UserPo">
+
+    <include refid="selector"/>
+    <include refid="where"/>
+    <include refid="order"/>
+   
+</select>
+
+<!-- 查询条数 -->
+<select id="queryCount" parameterType="QueryUser" resultType="int">
+ select count(1) from tuser 
+  <include refid="where"/>
+</select>
+
+<!-- 查询哪张表 -->
+<sql id="selector">
+select * from tuser
+</sql>
+<!-- sql片段 查询条件-->
+<sql id="where">
+<where>
+  <if test="loginname!=null and loginname!=''">
+    and loginname=#{loginname}
+  </if>
+  <if test="password!=null and password!=''">
+    and password=#{password}
+   </if>
+   <if test="isenabled!=0">
+     and isenabled=#{isenabled}
+   </if>
+</where>
+</sql>
+<!--  order by-->
+<sql id="order">
+ order by id desc
+</sql>
+<!-- 分页 -->
+<sql id="page">
+  <where>
+   <if test="start!=0">
+     and rn&gt;=#{start}
+   </if>
+   <if test="end!=0">
+     and rn&lt;=#{end}
+   </if>
+  </where>
+</sql> 
+  
+ <!-- resultMap: 关联返回-->
+<select id="queryBYId" parameterType="int" resultMap="user">
+  select * from tuser where id=#{id}
+</select>
+
+<!--删除-->
+<delete id="deleteById">
+  delete from tuser where id in
+<foreach collection="array" item="id" separator="," open="(" close=")">
+  #{id}
+</foreach>
+</delete>
+<!-- 删除一条 -->
+<delete id="delete" parameterType="int">
+  delete from tuser where id=#{id}
+</delete>
+
+<!-- 修改-->
+<update id="update" parameterType="UserPo" >
+  update tuser  
+  <set>
+    <trim suffixOverrides=",">
+     <if test="password!=null and password!=''">
+           password=#{password},
+      </if>
+      <if test="sex!=null and sex!=''">
+       sex=#{sex},
+       </if>
+        <if test="birthday!=null">
+           birthday=#{birthday},
+      </if>
+      <if test="email!=null and email!=''">
+           email=#{email},
+      </if>
+      <if test="dept!=null">
+           dept=#{dept.id},
+      </if>
+      <if test="realname!=null and realname!=''">
+           realname=#{realname},
+       </if>
+       <if test="updator!=0">
+           updator=#{updator},
+      </if>
+      <if test="pic!=null and pic!=''">
+           pic=#{pic},
+      </if>
+      <if test="isenabled!=0">  
+          isenabled=#{isenabled},
+       
+      </if>
+          updatime=sysdate,
+    </trim>
+    where id=#{id}
+  
+  </set>
+
+</update>
+<!-- 新增 -->
+<insert id="insert" parameterType="UserPo">
+<selectKey  keyProperty="id" order="BEFORE" resultType="int">
+    select SQL_ZZ.NEXTVAL FROM DUAL
+</selectKey>
+ insert into tuser (id,loginname,password,sex,birthday,email,dept,realname,creator,creatime,pic,isenabled)
+ values(#{id},#{loginname},#{password},#{sex},#{birthday},#{email},#{dept.id},#{realname},#{creator},sysdate,#{pic},1)
+</insert>
+
+
+
+
+  
+</mapper>

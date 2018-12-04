@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zs.pms.dao.PinDao">
+
+
+<!-- 根据条件查询 -->
+<!-- resultType:条件查询 -->
+<select id="queryByCon" parameterType="QueryPinda" resultType="PinPo">
+
+    <include refid="selector"/>
+    <include refid="where"/>
+    <include refid="order"/>
+   
+</select>
+
+<!-- 查询条数 -->
+<select id="queryCount" parameterType="QueryPinda" resultType="int">
+ select count(1) from pindao 
+  <include refid="where"/>
+</select>
+
+<!-- resultType:查询分页 -->
+<select id="queryByPage" parameterType="QueryPinda" resultType="PinPo">
+  select * from
+(select rownum rn,t.* from(
+    <include refid="selector"/>
+    <include refid="where"/>
+    <include refid="order"/>
+    )t )t1
+    <include refid="page"/>
+</select>
+
+<!-- 新增 -->
+<insert id="insert" parameterType="PinPo">
+<selectKey  keyProperty="id" order="BEFORE" resultType="int">
+ select sql_pin.nextval from dual
+</selectKey>
+ insert into pindao values(#{id},#{cname},#{pid},#{lev},#{isleaf},#{sort})
+</insert>
+
+<!--修改-->
+<update id="update" parameterType="PinPo"> 
+  update pindao  
+  <set>
+    <trim suffixOverrides=",">
+     <if test="cname!=null and cname!=''">
+           cname=#{cname},
+      </if>
+      <if test="pid!=0">
+           pid=#{pid},
+      </if>
+      <if test="lev!=0">  
+          lev=#{lev},
+       </if>
+       <if test="isleaf!=0">  
+          isleaf=#{isleaf},
+       </if>    
+    </trim>
+    where id=#{id}
+  </set>
+</update>
+<!-- 删除一条 -->
+<delete id="delete"  parameterType="int">
+ delete from pindao where id=#{id}
+</delete>
+<!--删除-->
+<delete id="deleteById">
+  delete from pindao where id in
+<foreach collection="array" item="id" separator="," open="(" close=")">
+  #{id}
+</foreach>
+</delete>
+
+<!-- 查询哪张表 -->
+<sql id="selector">
+select * from pindao
+</sql>
+<!-- sql片段 查询条件-->
+<sql id="where">
+<where>
+  <if test="cname!=null and cname!=''">
+    and cname=#{cname}
+  </if>
+</where>
+</sql>
+<!--  order by-->
+<sql id="order">
+ order by id desc
+</sql>
+<!-- 分页 -->
+<sql id="page">
+  <where>
+   <if test="start!=0">
+     and rn&gt;=#{start}
+   </if>
+   <if test="end!=0">
+     and rn&lt;=#{end}
+   </if>
+  </where>
+</sql> 
+</mapper>
